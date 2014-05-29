@@ -172,6 +172,24 @@ endfunction
 function exqfix#confirm_select(modifier)
      " TODO
 endfunction
+
+" exqfix#paste(reg)
+function exqfix#paste(reg)
+    silent exec '1,$d _'
+    silent put! = getreg(a:reg)
+    silent normal gg
+
+    " " choose compiler automatically
+    " call s:exQF_ChooseCompiler ()
+    exec 'compiler '. 'gcc'
+
+    " init compiler dir and current working dir
+    let cur_dir = getcwd()
+
+    " get the quick fix result
+    silent exec 'cgetb'
+endfunction
+
 " }}}1
 
 " vim:ts=4:sw=4:sts=4 et fdm=marker:

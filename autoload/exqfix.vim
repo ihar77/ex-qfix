@@ -1,5 +1,5 @@
 " variables {{{1
-let s:cur_qfix_file = "" 
+let s:title = "-QFix-" 
 
 let s:zoom_in = 0
 let s:keymap = {}
@@ -10,6 +10,9 @@ let s:help_text_short = [
             \ '',
             \ ]
 let s:help_text = s:help_text_short
+
+let s:compiler = "gcc" 
+let s:qfix_file = './error.qfix'
 " }}}
 
 " functions {{{1
@@ -48,31 +51,6 @@ function exqfix#toggle_help()
     call ex#hl#clear_confirm()
 endfunction
 
-" exqfix#open {{{2
-function exqfix#open(filename)
-    " if the filename is empty, use default project file
-    let filename = a:filename
-    if filename == ""
-        let filename = g:ex_qfix_file
-    endif
-
-    " if we open a different project, close the old one first.
-    if filename !=# s:cur_qfix_file
-        if s:cur_qfix_file != ""
-            let winnr = bufwinnr(s:cur_qfix_file)
-            if winnr != -1
-                call ex#window#close(winnr)
-            endif
-        endif
-
-        " reset project filename and title.
-        let s:cur_qfix_file = a:filename
-    endif
-
-    " open and goto the window
-    call exqfix#open_window()
-endfunction
-
 " exqfix#open_window {{{2
 
 function exqfix#init_buffer()
@@ -103,6 +81,7 @@ function s:on_close()
 
     " go back to edit buffer
     call ex#window#goto_edit_window()
+    call ex#hl#clear_target()
 endfunction
 
 function exqfix#open_window()
@@ -112,17 +91,13 @@ function exqfix#open_window()
     endif
     call ex#window#goto_edit_window()
 
-    if s:cur_qfix_file == ""
-        let s:cur_qfix_file = g:ex_qfix_file
-    endif
-
-    let winnr = bufwinnr(s:cur_qfix_file)
+    let winnr = bufwinnr(s:title)
     if winnr == -1
         call ex#window#open( 
-                    \ s:cur_qfix_file, 
+                    \ s:title, 
                     \ g:ex_qfix_winsize,
                     \ g:ex_qfix_winpos,
-                    \ 0,
+                    \ 1,
                     \ 1,
                     \ function('exqfix#init_buffer')
                     \ )
@@ -141,28 +116,24 @@ endfunction
 
 " exqfix#close_window {{{2
 function exqfix#close_window()
-    if s:cur_qfix_file != ""
-        let winnr = bufwinnr(s:cur_qfix_file)
-        if winnr != -1
-            call ex#window#close(winnr)
-            return 1
-        endif
+    let winnr = bufwinnr(s:title)
+    if winnr != -1
+        call ex#window#close(winnr)
+        return 1
     endif
     return 0
 endfunction
 
 " exqfix#toggle_zoom {{{2
 function exqfix#toggle_zoom()
-    if s:cur_qfix_file != ""
-        let winnr = bufwinnr(s:cur_qfix_file)
-        if winnr != -1
-            if s:zoom_in == 0
-                let s:zoom_in = 1
-                call ex#window#resize( winnr, g:ex_qfix_winpos, g:ex_qfix_winsize_zoom )
-            else
-                let s:zoom_in = 0
-                call ex#window#resize( winnr, g:ex_qfix_winpos, g:ex_qfix_winsize )
-            endif
+    let winnr = bufwinnr(s:title)
+    if winnr != -1
+        if s:zoom_in == 0
+            let s:zoom_in = 1
+            call ex#window#resize( winnr, g:ex_qfix_winpos, g:ex_qfix_winsize_zoom )
+        else
+            let s:zoom_in = 0
+            call ex#window#resize( winnr, g:ex_qfix_winpos, g:ex_qfix_winsize )
         endif
     endif
 endfunction
@@ -171,23 +142,125 @@ endfunction
 " modifier: '' or 'shift'
 function exqfix#confirm_select(modifier)
      " TODO
+     call exqfix#goto(-1)
 endfunction
 
-" exqfix#paste(reg)
-function exqfix#paste(reg)
+" exqfix#open {{{2
+function exqfix#open(filename)
+    let qfile = a:filename
+    if qfile == ''
+        let qfile = s:qfix_file
+    endif
+
+    if findfile(qfile) == ''
+        call ex#warning( 'Can not find qfix file: ' . qfile )
+        return
+    endif
+
+    " open the qfix window
+    call exqfix#open_window()
+
+    " clear screen and put new result
     silent exec '1,$d _'
-    silent put! = getreg(a:reg)
-    silent normal gg
 
-    " " choose compiler automatically
-    " call s:exQF_ChooseCompiler ()
-    exec 'compiler '. 'gcc'
+    " add online help 
+    if g:ex_qfix_enable_help
+        silent call append ( 0, s:help_text )
+        silent exec '$d'
+        let start_line = len(s:help_text)
+    else
+        let start_line = 1
+    endif
 
-    " init compiler dir and current working dir
-    let cur_dir = getcwd()
+    " read qfix files
+    let qfixlist = readfile(qfile)
+    call append( start_line, qfixlist )
 
     " get the quick fix result
     silent exec 'cgetb'
+endfunction
+
+" exqfix#paste
+function exqfix#paste(reg)
+    " open the global search window
+    call exqfix#open_window()
+
+    "
+    silent put! = getreg(a:reg)
+
+    " get the quick fix result
+    silent exec 'cgetb'
+
+    "
+    silent normal gg
+endfunction
+
+" exqfix#build
+function exqfix#build(opt)
+    let result = system( &makeprg . ' ' . a:opt )
+
+    " open the global search window
+    call exqfix#open_window()
+
+    " clear screen and put new result
+    silent exec '1,$d _'
+
+    " add online help 
+    if g:ex_gsearch_enable_help
+        silent call append ( 0, s:help_text )
+        silent exec '$d'
+        let start_line = len(s:help_text)
+    else
+        let start_line = 0
+    endif
+
+    silent put =result
+
+    " get the quick fix result
+    silent exec 'cgetb'
+
+    "
+    silent normal gg
+endfunction
+
+" exqfix#goto
+function exqfix#goto(idx)
+    let idx = a:idx
+    if idx == -1
+        let idx = line('.')
+    endif
+
+    " start jump
+    call ex#window#goto_edit_window()
+    try
+        silent exec "cr".idx
+    catch /^Vim\%((\a\+)\)\=:E42/
+        call ex#warning('No Errors')
+    catch /^Vim\%((\a\+)\)\=:E325/ " this would happen when editting the same file with another programme.
+        call ex#warning('Another programme is edit the same file.')
+        try " now we try this again.
+            silent exec 'cr'.idx
+        catch /^Vim\%((\a\+)\)\=:E42/
+            call ex#warning('No Errors')
+        endtry
+    endtry
+
+    " go back
+    exe 'normal! zz'
+    call ex#hl#target_line(line('.'))
+    call ex#window#goto_plugin_window()
+endfunction
+
+" exqfix#set_compiler
+function exqfix#set_compiler(compiler)
+    " setup compiler
+    let s:compiler = a:compiler
+    exec 'compiler! '. s:compiler
+endfunction
+
+" exqfix#set_qfix_file
+function exqfix#set_qfix_file(path)
+    let s:qfix_file = a:path
 endfunction
 
 " }}}1

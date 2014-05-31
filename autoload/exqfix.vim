@@ -178,6 +178,9 @@ function exqfix#open(filename)
 
     " get the quick fix result
     silent exec 'cgetb'
+
+    "
+    call cursor( start_line, 0 )
 endfunction
 
 " exqfix#paste
@@ -185,14 +188,26 @@ function exqfix#paste(reg)
     " open the global search window
     call exqfix#open_window()
 
-    "
-    silent put! = getreg(a:reg)
+    " clear screen and put new result
+    silent exec '1,$d _'
+
+    " add online help 
+    if g:ex_gsearch_enable_help
+        silent call append ( 0, s:help_text )
+        silent exec '$d'
+        let start_line = len(s:help_text)
+    else
+        let start_line = 0
+    endif
+
+    silent put =getreg(a:reg)
 
     " get the quick fix result
     silent exec 'cgetb'
 
     "
-    silent normal gg
+    call cursor( start_line, 0 )
+
 endfunction
 
 " exqfix#build
@@ -220,7 +235,7 @@ function exqfix#build(opt)
     silent exec 'cgetb'
 
     "
-    silent normal gg
+    call cursor( start_line, 0 )
 endfunction
 
 " exqfix#goto
@@ -262,6 +277,8 @@ endfunction
 function exqfix#set_qfix_file(path)
     let s:qfix_file = a:path
 endfunction
+
+" TODO: getqflist(), getloclist()
 
 " }}}1
 

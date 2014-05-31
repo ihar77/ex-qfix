@@ -23,6 +23,7 @@ command! -n=? -complete=file QFix call exqfix#open('<args>')
 command! EXQFixOpen call exqfix#open_window()
 command! EXQFixClose call exqfix#close_window()
 command! EXQFixToggle call exqfix#toggle_window()
+command! EXQFixPaste call exqfix#paste('*')
 "}}}
 
 " default key mappings {{{1
@@ -33,8 +34,8 @@ call exqfix#register_hotkey( 4  , 1, '<CR>'            , ":call exqfix#confirm_s
 call exqfix#register_hotkey( 5  , 1, '<2-LeftMouse>'   , ":call exqfix#confirm_select('')<CR>"                   , 'File: Open it. Folder: Fold in/out.' )
 call exqfix#register_hotkey( 6  , 1, '<S-CR>'          , ":call exqfix#confirm_select('shift')<CR>"              , 'File: Split and open it. Folder: Open the folder in os file browser.' )
 call exqfix#register_hotkey( 7  , 1, '<S-2-LeftMouse>' , ":call exqfix#confirm_select('shift')<CR>"              , 'File: Split and open it. Folder: Open the folder in os file browser.' )
-call exqfix#register_hotkey( 8  , 1, 'p'               , ":call exqfix#paste('" . '"' . "')<CR>"                 , 'Paste error list from registry ".' )
-call exqfix#register_hotkey( 9  , 1, '<leader>p'       , ":call exqfix#paste('*')<CR>"                           , 'Paste error list from registry *.' )
+call exqfix#register_hotkey( 8  , 1, 'p'               , ":call exqfix#paste('" . '"' . "')<CR>"                 , 'Paste error list from register ".' )
+call exqfix#register_hotkey( 9  , 1, '<leader>p'       , ":call exqfix#paste('*')<CR>"                           , 'Paste error list from register *.' )
 "}}}
 
 call ex#register_plugin( 'exqfix', { 'actions': ['autoclose'] } )

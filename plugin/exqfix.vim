@@ -28,7 +28,11 @@ command! EXQFixPaste call exqfix#paste('*')
 
 " default key mappings {{{1
 call exqfix#register_hotkey( 1  , 1, '<F1>'            , ":call exqfix#toggle_help()<CR>"                        , 'Toggle help.' )
-call exqfix#register_hotkey( 2  , 1, '<ESC>'           , ":call exqfix#close_window()<CR>"                       , 'Close window.' )
+if has('gui_running')
+    call exqfix#register_hotkey( 2  , 1, '<ESC>'           , ":call exqfix#close_window()<CR>"                       , 'Close window.' )
+else
+    call exqfix#register_hotkey( 2  , 1, '<leader><ESC>'   , ":call exqfix#close_window()<CR>"                       , 'Close window.' )
+endif
 call exqfix#register_hotkey( 3  , 1, '<Space>'         , ":call exqfix#toggle_zoom()<CR>"                        , 'Zoom in/out project window.' )
 call exqfix#register_hotkey( 4  , 1, '<CR>'            , ":call exqfix#confirm_select('')<CR>"                   , 'File: Open it. Folder: Fold in/out.' )
 call exqfix#register_hotkey( 5  , 1, '<2-LeftMouse>'   , ":call exqfix#confirm_select('')<CR>"                   , 'File: Open it. Folder: Fold in/out.' )

@@ -141,8 +141,60 @@ endfunction
 " exqfix#confirm_select {{{2
 " modifier: '' or 'shift'
 function exqfix#confirm_select(modifier)
-     " TODO
-     call exqfix#goto(-1)
+    " check if the line is valid file line
+    let line = getline('.') 
+
+    " get filename 
+    let filename = line
+
+    " NOTE: GSF,GSFW only provide filepath information, so we don't need special process.
+    let idx = stridx(line, ':') 
+    if idx > 0 
+        let filename = strpart(line, 0, idx) "DISABLE: escape(strpart(line, 0, idx), ' ') 
+    endif 
+
+    " check if file exists
+    if findfile(filename) == '' 
+        call ex#warning( filename . ' not found!' ) 
+        return
+    endif 
+
+    " confirm the selection
+    let s:confirm_at = line('.')
+    call ex#hl#confirm_line(s:confirm_at)
+
+    " goto edit window
+    call ex#window#goto_edit_window()
+
+    " open the file
+    if bufnr('%') != bufnr(filename) 
+        exe ' silent e ' . escape(filename,' ') 
+    endif 
+
+    if idx > 0 
+        " get line number 
+        let line = strpart(line, idx+1) 
+        let idx = stridx(line, ":") 
+        let linestr = strpart(line, 0, idx)
+        if 0 == match(linestr, "[0-9]")
+            let linenr  = eval(linestr) 
+            exec ' call cursor(linenr, 1)' 
+
+            " jump to the pattern if the code have been modified 
+            let pattern = strpart(line, idx+2) 
+            let pattern = '\V' . substitute( pattern, '\', '\\\', "g" ) 
+            if search(pattern, 'cw') == 0 
+                call ex#warning('Line pattern not found: ' . pattern)
+            endif 
+        else
+        endif
+    endif 
+
+    " go back to global search window 
+    exe 'normal! zz'
+    call ex#hl#target_line(line('.'))
+    " call ex#window#goto_plugin_window()
+
 endfunction
 
 " exqfix#open {{{2

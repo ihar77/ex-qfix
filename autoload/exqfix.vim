@@ -64,7 +64,9 @@ function exqfix#init_buffer()
     " buffers' event 
     " This is why I set the filetype manually here. 
     set filetype=exqfix
-    au! BufWinLeave <buffer> call <SID>on_close()
+    augroup exqfix
+        au! BufWinLeave <buffer> call <SID>on_close()
+    augroup END
 
     if line('$') <= 1 && g:ex_qfix_enable_help
         silent call append ( 0, s:help_text )
